@@ -1,25 +1,43 @@
-import { Router } from 'express';
+import { Express } from 'express';
 import AppController from '../controllers/AppController';
-import UsersController from '../controllers/UsersController';
 import AuthController from '../controllers/AuthController';
+import UsersController from '../controllers/UsersController';
 import FilesController from '../controllers/FilesController';
+import { basicAuthenticate, xTokenAuthenticate } from '../middlewares/auth';
+import { APIError, errorResponse } from '../middlewares/error';
 
-const router = Router();
+/**
+ * Injects routes with their handlers to the given Express application.
+ * @param {Express} app
+ */
+const injectRoutes = (app) => {
+  // App status routes
+  app.get('/status', AppController.getStatus);
+  app.get('/stats', AppController.getStats);
 
-router.get('/status', AppController.getStatus);
-router.get('/stats', AppController.getStats);
+  // Authentication routes
+  app.get('/connect', basicAuthenticate, AuthController.getConnect);
+  app.get('/disconnect', xTokenAuthenticate, AuthController.getDisconnect);
 
-router.post('/users', UsersController.postNew);
+  // User routes
+  app.post('/users', UsersController.postNew);
+  app.get('/users/me', xTokenAuthenticate, UsersController.getMe);
 
-router.get('/connect', AuthController.getConnect);
-router.get('/disconnect', AuthController.getDisconnect);
-router.get('/users/me', UsersController.getMe);
+  // File routes
+  app.post('/files', xTokenAuthenticate, FilesController.postUpload);
+  app.get('/files/:id', xTokenAuthenticate, FilesController.getShow);
+  app.get('/files', xTokenAuthenticate, FilesController.getIndex);
+  app.put('/files/:id/publish', xTokenAuthenticate, FilesController.putPublish);
+  app.put('/files/:id/unpublish', xTokenAuthenticate, FilesController.putUnpublish);
+  app.get('/files/:id/data', FilesController.getFile);
 
-router.post('/files', FilesController.postUpload);
-router.get('/files/:id', FilesController.getShow);
-router.get('/files', FilesController.getIndex);
-router.put('/files/:id/publish', FilesController.putPublish);
-router.put('/files/:id/unpublish', FilesController.putUnpublish);
-router.get('/files/:id/data', FilesController.getFile);
+  // Handle 404 errors
+  app.all('*', (req, res, next) => {
+    errorResponse(new APIError(404, `Cannot ${req.method} ${req.url}`), req, res, next);
+  });
 
-export default router;
+  // Error handling middleware
+  app.use(errorResponse);
+};
+
+export default injectRoutes;
