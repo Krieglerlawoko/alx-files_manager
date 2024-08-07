@@ -1,4 +1,4 @@
-import { MongoClient } from 'mongodb';
+mport { MongoClient } from 'mongodb';
 import envLoader from './env_loader';
 
 /**
@@ -16,8 +16,11 @@ class DBClient {
     const dbURL = `mongodb://${host}:${port}/${database}`;
 
     this.client = new MongoClient(dbURL, { useUnifiedTopology: true });
+    this.connected = false;
+
     this.client.connect().then(() => {
       console.log('Connected successfully to MongoDB server');
+      this.connected = true;
     }).catch((error) => {
       console.error('Failed to connect to MongoDB server:', error);
     });
@@ -28,7 +31,7 @@ class DBClient {
    * @returns {boolean}
    */
   isAlive() {
-    return this.client.isConnected();
+    return this.connected;
   }
 
   /**
@@ -36,12 +39,8 @@ class DBClient {
    * @returns {Promise<number>}
    */
   async nbUsers() {
-    try {
-      return await this.client.db().collection('users').countDocuments();
-    } catch (error) {
-      console.error('Error counting documents in users collection:', error);
-      throw error;
-    }
+    if (!this.connected) throw new Error('Not connected to MongoDB');
+    return this.client.db().collection('users').countDocuments();
   }
 
   /**
@@ -49,12 +48,8 @@ class DBClient {
    * @returns {Promise<number>}
    */
   async nbFiles() {
-    try {
-      return await this.client.db().collection('files').countDocuments();
-    } catch (error) {
-      console.error('Error counting documents in files collection:', error);
-      throw error;
-    }
+    if (!this.connected) throw new Error('Not connected to MongoDB');
+    return this.client.db().collection('files').countDocuments();
   }
 
   /**
@@ -62,12 +57,8 @@ class DBClient {
    * @returns {Promise<Collection>}
    */
   async usersCollection() {
-    try {
-      return this.client.db().collection('users');
-    } catch (error) {
-      console.error('Error getting users collection:', error);
-      throw error;
-    }
+    if (!this.connected) throw new Error('Not connected to MongoDB');
+    return this.client.db().collection('users');
   }
 
   /**
@@ -75,12 +66,8 @@ class DBClient {
    * @returns {Promise<Collection>}
    */
   async filesCollection() {
-    try {
-      return this.client.db().collection('files');
-    } catch (error) {
-      console.error('Error getting files collection:', error);
-      throw error;
-    }
+    if (!this.connected) throw new Error('Not connected to MongoDB');
+    return this.client.db().collection('files');
   }
 }
 
