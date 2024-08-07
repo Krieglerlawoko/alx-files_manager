@@ -1,4 +1,6 @@
-mport { MongoClient } from 'mongodb';
+import { MongoClient } from 'mongodb';
+// eslint-disable-next-line no-unused-vars
+import Collection from 'mongodb/lib/collection';
 import envLoader from './env_loader';
 
 /**
@@ -15,15 +17,8 @@ class DBClient {
     const database = process.env.DB_DATABASE || 'files_manager';
     const dbURL = `mongodb://${host}:${port}/${database}`;
 
-    this.client = new MongoClient(dbURL, { useUnifiedTopology: true });
-    this.connected = false;
-
-    this.client.connect().then(() => {
-      console.log('Connected successfully to MongoDB server');
-      this.connected = true;
-    }).catch((error) => {
-      console.error('Failed to connect to MongoDB server:', error);
-    });
+    this.client = new mongodb.MongoClient(dbURL, { useUnifiedTopology: true });
+    this.client.connect();
   }
 
   /**
@@ -31,24 +26,22 @@ class DBClient {
    * @returns {boolean}
    */
   isAlive() {
-    return this.connected;
+    return this.client.isConnected();
   }
 
   /**
    * Retrieves the number of users in the database.
-   * @returns {Promise<number>}
+   * @returns {Promise<Number>}
    */
   async nbUsers() {
-    if (!this.connected) throw new Error('Not connected to MongoDB');
     return this.client.db().collection('users').countDocuments();
   }
 
   /**
    * Retrieves the number of files in the database.
-   * @returns {Promise<number>}
+   * @returns {Promise<Number>}
    */
   async nbFiles() {
-    if (!this.connected) throw new Error('Not connected to MongoDB');
     return this.client.db().collection('files').countDocuments();
   }
 
@@ -57,7 +50,6 @@ class DBClient {
    * @returns {Promise<Collection>}
    */
   async usersCollection() {
-    if (!this.connected) throw new Error('Not connected to MongoDB');
     return this.client.db().collection('users');
   }
 
@@ -66,7 +58,6 @@ class DBClient {
    * @returns {Promise<Collection>}
    */
   async filesCollection() {
-    if (!this.connected) throw new Error('Not connected to MongoDB');
     return this.client.db().collection('files');
   }
 }
