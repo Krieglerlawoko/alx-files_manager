@@ -10,8 +10,7 @@ class RedisClient {
 
     // Promisify Redis methods for async/await
     this.asyncGet = promisify(this.client.get).bind(this.client);
-    this.asyncSet = promisify(this.client.set).bind(this.client);
-    this.asyncDel = promisify(this.client.del).bind(this.client);
+    this.asyncDel = promisify(this.client.del).bind(this.client); // Only use for methods that remain compatible
 
     // Event listeners for error and connection
     this.client.on('error', (err) => {
@@ -47,17 +46,18 @@ class RedisClient {
 
   /**
    * Sets a key-value pair in Redis with an expiration time.
+   * Uses callback-based API for compatibility with Redis 3.x.
    * @param {string} key - The key to set in Redis.
    * @param {string|number} value - The value to associate with the key.
    * @param {number} duration - Expiration time in seconds.
    * @returns {Promise<void>}
    */
-  async set(key, value, duration) {
-    try {
-      await this.asyncSet(key, value, 'EX', duration); // Set with expiration
-    } catch (error) {
-      console.error(`Error setting key "${key}" in Redis: ${error.message}`);
-    }
+  set(key, value, duration) {
+    this.client.setex(key, duration, value, (err) => {
+      if (err) {
+        console.error(`Error setting key "${key}" in Redis: ${err.message}`);
+      }
+    });
   }
 
   /**
