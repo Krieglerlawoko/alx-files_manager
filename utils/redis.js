@@ -2,29 +2,29 @@ import redis from 'redis';
 import { promisify } from 'util';
 
 /**
- * RedisService provides methods to interact with the Redis database.
+ * RedisClient class for interacting with Redis.
  */
-class RedisService {
+class RedisClient {
   constructor() {
-    this.client = redis.createClient();
+    this.client = redis.createClient(); // Create Redis client
 
-    // Promisify the `get` and `del` methods for async usage
+    // Promisify Redis methods for async/await
     this.asyncGet = promisify(this.client.get).bind(this.client);
+    this.asyncSet = promisify(this.client.set).bind(this.client);
     this.asyncDel = promisify(this.client.del).bind(this.client);
-    this.asyncSetEx = promisify(this.client.setex).bind(this.client);
 
-    // Event listeners for error and connection events
+    // Event listeners for error and connection
     this.client.on('error', (err) => {
-      console.error(`Error connecting to Redis server: ${err.message}`);
+      console.error(`Redis client error: ${err.message}`);
     });
 
     this.client.on('connect', () => {
-      console.info('Successfully connected to Redis server');
+      console.info('Connected to Redis server');
     });
   }
 
   /**
-   * Checks if the Redis connection is active.
+   * Checks if Redis connection is alive.
    * @returns {boolean} True if connected, otherwise false.
    */
   isAlive() {
@@ -32,9 +32,9 @@ class RedisService {
   }
 
   /**
-   * Fetches the value associated with a given key from Redis.
-   * @param {string} key - The key to look up.
-   * @returns {Promise<string|null>} The value for the specified key, or null if not found.
+   * Gets the value associated with a key in Redis.
+   * @param {string} key - The key to fetch from Redis.
+   * @returns {Promise<string|null>} The value or null if not found.
    */
   async get(key) {
     try {
@@ -46,23 +46,23 @@ class RedisService {
   }
 
   /**
-   * Stores a key-value pair in Redis with an expiration time.
-   * @param {string} key - The key to store.
-   * @param {string} value - The value to associate with the key.
-   * @param {number} ttl - The time-to-live (TTL) in seconds.
+   * Sets a key-value pair in Redis with an expiration time.
+   * @param {string} key - The key to set in Redis.
+   * @param {string|number} value - The value to associate with the key.
+   * @param {number} duration - Expiration time in seconds.
    * @returns {Promise<void>}
    */
-  async set(key, value, ttl) {
+  async set(key, value, duration) {
     try {
-      await this.asyncSetEx(key, ttl, value);
+      await this.asyncSet(key, value, 'EX', duration); // Set with expiration
     } catch (error) {
       console.error(`Error setting key "${key}" in Redis: ${error.message}`);
     }
   }
 
   /**
-   * Removes a key-value pair from Redis.
-   * @param {string} key - The key to remove.
+   * Deletes a key from Redis.
+   * @param {string} key - The key to delete.
    * @returns {Promise<void>}
    */
   async del(key) {
@@ -74,6 +74,6 @@ class RedisService {
   }
 }
 
-// Instantiate and export a singleton instance of RedisService
-const redisClient = new RedisService();
+// Export a singleton instance of RedisClient
+const redisClient = new RedisClient();
 export default redisClient;
